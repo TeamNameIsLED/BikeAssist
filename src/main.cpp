@@ -26,9 +26,9 @@ void loop() {
 
     // 속도나 기울기가 임계값 초과 시 브레이크 작동
     if (currentSpeed > 15.0 || currentInclination > 15.0) {
-        activateBrake(currentSpeed);  // 속도에 따라 브레이크 세기 조절
+        activateBrake(currentSpeed, currentInclination);  // 속도에 따라 브레이크 세기 조절
     } else {
-        activateBrake(0);  // 속도가 낮으면 브레이크 해제
+        activateBrake(0, currentInclination);  // 속도가 낮으면 브레이크 해제
     }
 
     delay(100);  // 100ms 간격으로 데이터 확인
