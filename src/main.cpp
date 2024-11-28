@@ -4,7 +4,7 @@
 #include "brake_controller.h"
 
 #define HALL_SENSOR_PIN 4
-#define SERVO_PIN 9
+#define SERVO_PIN 5
 
 void setup() {
     Serial.begin(115200);  // 시리얼 통신 시작
