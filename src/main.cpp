@@ -6,6 +6,8 @@
 #define HALL_SENSOR_PIN 4
 #define SERVO_PIN 5
 
+extern volatile int pulseCount;
+
 void setup() {
     Serial.begin(115200);  // 시리얼 통신 시작
 
@@ -18,7 +20,9 @@ void loop() {
     float currentSpeed = getSpeed();  // 현재 속도 값
     float currentInclination = getInclination();  // 현재 기울기 값
 
-    Serial.print("Speed: ");
+    Serial.print("Pulse Count: ");
+    Serial.print(pulseCount);
+    Serial.print(", Speed: ");
     Serial.print(currentSpeed);
     Serial.print(" km/h, Inclination: ");
     Serial.print(currentInclination);
@@ -31,5 +35,5 @@ void loop() {
         activateBrake(0, currentInclination);  // 속도가 낮으면 브레이크 해제
     }
 
-    delay(100);  // 100ms 간격으로 데이터 확인
+    delay(500);  // 100ms 간격으로 데이터 확인
 }
