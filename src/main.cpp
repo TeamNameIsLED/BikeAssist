@@ -17,7 +17,7 @@ char HOST_ADDRESS[] = "a3pecuomf1y0cd-ats.iot.ap-northeast-2.amazonaws.com";
 char CLIENT_ID[] = "SpeedMonitorDevice";
 char SHADOW_UPDATE_TOPIC[] = "$aws/things/ESP32_BIKEASSIST/shadow/update"; // Shadow 업데이트 주제
 
-int state = 0; // 상태 변수: 0 = 속도 낮음, 1 = 속도 높음(메시지 전송됨)
+int state = 0; // 상태 변수: 0 = 속도 낮음(안전), 1 = 속도 높음(위험)
 extern volatile int pulseCount;
 
 void setup() {
