@@ -4,12 +4,15 @@
 Servo brakeServo;  // 서보 모터 객체
 
 #define LED_PIN 16  // LED가 연결된 핀
+#define BUZZER_PIN 23 // 부저가 연결된 핀
 
 // 브레이크 제어 초기화
 void initBrakeController(int pin) {
     brakeServo.attach(pin);  // 서보 모터를 지정된 핀에 연결
-    pinMode(LED_PIN, OUTPUT);  // LED 핀을 출력으로 설정
+    pinMode(LED_PIN, OUTPUT);   // LED 핀을 출력으로 설정
+    pinMode(BUZZER_PIN, OUTPUT); // 부저 핀을 출력으로 설정
     digitalWrite(LED_PIN, LOW);  // 초기 상태에서 LED 끄기
+    digitalWrite(BUZZER_PIN, LOW); // 초기 상태에서 부저 끄기
 }
 
 // 브레이크 작동 (속도와 기울기에 따라 제어)
@@ -25,8 +28,8 @@ void activateBrake(float speed, float inclination) {
     }
 
     // 기울기에 따른 브레이크 각도 설정
-    if (inclination > 15.0) {
-        brakeAngle = map(inclination, 15, 30, minAngle, maxAngle);  // 기울기에 따라 각도 증가
+    if (inclination > -2.5) {
+        brakeAngle = map(inclination, -2.5, 13, minAngle, maxAngle);  // 기울기에 따라 각도 증가
     }
     brakeAngle = constrain(brakeAngle, minAngle, maxAngle);  // 각도 제한
 
@@ -34,11 +37,15 @@ void activateBrake(float speed, float inclination) {
 
     // 서보모터 작동 시 LED 켜기
     if (brakeAngle > minAngle) {
-        digitalWrite(LED_PIN, HIGH);  // LED 켜기
-        Serial.print("LED ON ");
+        digitalWrite(LED_PIN, HIGH);   // LED 켜기
+        digitalWrite(BUZZER_PIN, HIGH); // 부저 켜기
+        delay(200);                    // 부저 작동 시간 (200ms)
+        digitalWrite(BUZZER_PIN, LOW); // 부저 끄기
+        Serial.print("LED ON and Buzzer ON ");
     } else {
-        digitalWrite(LED_PIN, LOW);   // LED 끄기
-        Serial.print("LED OFF ");
+        digitalWrite(LED_PIN, LOW);    // LED 끄기
+        digitalWrite(BUZZER_PIN, LOW); // 부저 끄기
+        Serial.print("LED OFF and Buzzer OFF ");
     }
 
     // 디버깅 출력

@@ -9,6 +9,7 @@
 #define HALL_SENSOR_PIN 4
 #define SERVO_PIN 5
 #define LED_PIN 16 // LED 핀 번호
+#define BUZZER_PIN 23 // 부저가 연결된 핀
 
 AWS_IOT awsIot;
 const char* ssid = "MJS-Guest";
@@ -17,7 +18,7 @@ char HOST_ADDRESS[] = "a3pecuomf1y0cd-ats.iot.ap-northeast-2.amazonaws.com";
 char CLIENT_ID[] = "SpeedMonitorDevice";
 char SHADOW_UPDATE_TOPIC[] = "$aws/things/ESP32_BIKEASSIST/shadow/update"; // Shadow 업데이트 주제
 
-int state = 0; // 상태 변수: 0 = 속도 낮음, 1 = 속도 높음(메시지 전송됨)
+int state = 0; // 상태 변수: 0 = 속도 낮음(안전), 1 = 속도 높음(위험)
 extern volatile int pulseCount;
 
 void setup() {
@@ -64,7 +65,7 @@ void loop() {
     Serial.println(" degrees");
 
     // 속도나 기울기가 임계값 초과 시 브레이크 작동
-    if (currentSpeed > 15.0 || currentInclination > 15.0) {
+    if (currentSpeed > 15.0 || currentInclination > -2.5) {
         activateBrake(currentSpeed, currentInclination);  // 속도에 따라 브레이크 세기 조절
     } else {
         activateBrake(0, currentInclination);  // 속도가 낮으면 브레이크 해제
@@ -72,43 +73,54 @@ void loop() {
 
     // AWS Shadow에 속도 정보를 업데이트
     char payload[512];
-    snprintf(payload, sizeof(payload), "{\"state\": {\"reported\": {\"speed\": %.2f}}}", currentSpeed);
-    if (awsIot.publish(SHADOW_UPDATE_TOPIC, payload) == 0) {
-        Serial.print("Published Speed to AWS Shadow: ");
-        Serial.println(payload);
-    } else {
-        Serial.println("Publish to AWS Shadow failed");
-    }
 
-    // 속도가 30을 처음 초과하는 경우 문자 전송 및 LED 켜기
-    if (currentSpeed > 30.0 && state == 0) {
-        state = 1; // 상태를 1로 설정하여 이미 문자 보냈음을 표시
-        digitalWrite(LED_PIN, HIGH); // LED 켜기
-        Serial.println("LED is ON due to high speed");
+    // 속도가 15을 처음 초과하는 경우 문자 전송 및 LED 켜기
+    if (currentSpeed > 15.0) {
+        if (state == 0) {
+            state = 1; // 상태를 1로 설정하여 이미 문자 보냈음을 표시
+            Serial.println("LED is ON due to high speed");
 
-        // Shadow에 상태 업데이트 (속도가 높아졌음을 표시)
-        snprintf(payload, sizeof(payload), "{\"state\": {\"reported\": {\"speed\": %.2f, \"status\": \"HIGH\"}}}", currentSpeed);
-        if (awsIot.publish(SHADOW_UPDATE_TOPIC, payload) == 0) {
+            // Shadow에 상태 업데이트 (속도가 높아졌음을 표시)
+            snprintf(payload, sizeof(payload), "{\"state\": {\"reported\": {\"speed\": %.2f, \"status\": \"HIGH\"}}}", currentSpeed);
+            while (awsIot.publish(SHADOW_UPDATE_TOPIC, payload) != 0) {
+                Serial.println("Publish to AWS Shadow failed, retrying...");
+                delay(500); // 재시도 전 딜레이
+            }
             Serial.print("Published Speed and Status to AWS Shadow: ");
             Serial.println(payload);
         } else {
-            Serial.println("Publish to AWS Shadow failed");
+            snprintf(payload, sizeof(payload), "{\"state\": {\"reported\": {\"speed\": %.2f}}}", currentSpeed);
+            if (awsIot.publish(SHADOW_UPDATE_TOPIC, payload) == 0) {
+                Serial.print("Published Speed and Status to AWS Shadow: ");
+                Serial.println(payload);
+            } else {
+                Serial.println("Publish to AWS Shadow failed");
+            }
         }
     }
 
-    // 속도가 30 이하로 떨어지는 경우 LED 끄고 상태 초기화
-    if (currentSpeed <= 30.0 && state == 1) {
-        state = 0; // 상태를 0으로 리셋
-        digitalWrite(LED_PIN, LOW); // LED 끄기
-        Serial.println("LED is OFF");
+    // 속도가 15 이하로 떨어지는 경우 LED 끄고 상태 초기화
+    if (currentSpeed <= 15.0) {
+        if ( state == 1 ) {
+            state = 0; // 상태를 0으로 리셋
+            Serial.println("LED is OFF");
 
-        // Shadow에 상태 업데이트 (속도가 낮아졌음을 표시)
-        snprintf(payload, sizeof(payload), "{\"state\": {\"reported\": {\"speed\": %.2f, \"status\": \"LOW\"}}}", currentSpeed);
-        if (awsIot.publish(SHADOW_UPDATE_TOPIC, payload) == 0) {
+            // Shadow에 상태 업데이트 (속도가 낮아졌음을 표시)
+            snprintf(payload, sizeof(payload), "{\"state\": {\"reported\": {\"speed\": %.2f, \"status\": \"LOW\"}}}", currentSpeed);
+            while (awsIot.publish(SHADOW_UPDATE_TOPIC, payload) != 0) {
+                Serial.println("Publish to AWS Shadow failed, retrying...");
+                delay(500); // 재시도 전 딜레이
+            }
             Serial.print("Published Speed and Status to AWS Shadow: ");
             Serial.println(payload);
         } else {
-            Serial.println("Publish to AWS Shadow failed");
+            snprintf(payload, sizeof(payload), "{\"state\": {\"reported\": {\"speed\": %.2f}}}", currentSpeed);
+            if (awsIot.publish(SHADOW_UPDATE_TOPIC, payload) == 0) {
+                Serial.print("Published Speed and Status to AWS Shadow: ");
+                Serial.println(payload);
+            } else {
+                Serial.println("Publish to AWS Shadow failed");
+            }
         }
     }
 
